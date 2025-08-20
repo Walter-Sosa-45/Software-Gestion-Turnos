@@ -1,0 +1,367 @@
+/* Reset y estilos base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff;
+  color: #1a1a1a;
+  line-height: 1.6;
+}
+
+/* Variables CSS personalizadas */
+:root {
+  --primary-color: #1a1a1a;
+  --secondary-color: #666666;
+  --accent-color: #007AFF;
+  --success-color: #34C759;
+  --warning-color: #FF9500;
+  --danger-color: #FF3B30;
+  --background-color: #ffffff;
+  --card-background: #f8f9fa;
+  --border-color: #e1e5e9;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --border-radius: 12px;
+  --border-radius-small: 8px;
+}
+
+/* Estilos para móviles */
+.container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Header */
+.header {
+  background: var(--background-color);
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.header .date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--secondary-color);
+  font-size: 16px;
+}
+
+.header .date svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Tarjetas de estadísticas */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 20px 16px;
+}
+
+.stat-card {
+  background: var(--card-background);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.stat-card .number {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.stat-card .label {
+  font-size: 14px;
+  color: var(--secondary-color);
+  font-weight: 500;
+}
+
+.stat-card .icon {
+  margin-bottom: 12px;
+}
+
+.stat-card .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.stat-card .status-dot.orange { background-color: var(--warning-color); }
+.stat-card .status-dot.green { background-color: var(--success-color); }
+.stat-card .status-dot.blue { background-color: var(--accent-color); }
+
+/* Sección de turnos */
+.turnos-section {
+  padding: 0 16px 20px;
+}
+
+.turnos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.turnos-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.turnos-header .ver-mas {
+  color: var(--accent-color);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Lista de turnos */
+.turnos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.turno-card {
+  background: var(--card-background);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.turno-card .turno-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.turno-card .hora {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.turno-card .hora svg {
+  width: 18px;
+  height: 18px;
+  color: var(--secondary-color);
+}
+
+.turno-card .cliente {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.turno-card .cliente svg {
+  width: 16px;
+  height: 16px;
+  color: var(--secondary-color);
+}
+
+.turno-card .telefono {
+  font-size: 14px;
+  color: var(--secondary-color);
+  margin-bottom: 12px;
+}
+
+.turno-card .whatsapp {
+  background: var(--success-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-small);
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.turno-card .whatsapp svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Pantalla de login */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background-color);
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--card-background);
+  border-radius: var(--border-radius);
+  padding: 32px 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 320px;
+}
+
+.login-card h2 {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 32px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  border-bottom: 2px solid var(--border-color);
+  background: transparent;
+  font-size: 16px;
+  color: var(--primary-color);
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+  border-bottom-color: var(--accent-color);
+}
+
+.login-button {
+  width: 100%;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 16px;
+}
+
+.login-button:hover {
+  background: #333;
+}
+
+.secondary-button {
+  width: 100%;
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.secondary-button:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .stats-grid {
+    gap: 12px;
+    padding: 16px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+  }
+  
+  .stat-card .number {
+    font-size: 28px;
+  }
+  
+  .turno-card {
+    padding: 14px;
+  }
+  
+  .login-card {
+    padding: 24px 20px;
+  }
+}
+
+/* Estados de turnos */
+.turno-estado {
+  padding: 4px 8px;
+  border-radius: var(--border-radius-small);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.turno-estado.pendiente {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.turno-estado.confirmado {
+  background: #d4edda;
+  color: #155724;
+}
+
+.turno-estado.completado {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.turno-estado.cancelado {
+  background: #f8d7da;
+  color: #721c24;
+}
