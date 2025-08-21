@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Clock, User, Phone, MessageCircle, Scissors, AlertCircle } from 'lucide-react';
+import { Calendar, Users, Clock, User, MessageCircle, Scissors, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { turnosService } from '../services/api';
+import MonthlyCalendar from './MonthlyCalendar';
 
 const Dashboard = () => {
   const [expandedTurnos, setExpandedTurnos] = useState(new Set());
@@ -10,69 +11,48 @@ const Dashboard = () => {
   const [estadisticas, setEstadisticas] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showMonthlyCalendar, setShowMonthlyCalendar] = useState(false);
   
   const fechaActual = new Date();
   const diaSemana = format(fechaActual, 'EEEE', { locale: es });
   const diaMes = format(fechaActual, 'dd', { locale: es });
   const mes = format(fechaActual, 'MMMM', { locale: es });
 
-  // Cargar datos del backend
   useEffect(() => {
     const cargarDatos = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // Obtener fecha actual en formato YYYY-MM-DD
         const fechaHoy = format(new Date(), 'yyyy-MM-dd');
         console.log('🔍 Fecha actual:', fechaHoy);
         
-        // Cargar turnos del día
-        const turnosDelDia = await turnosService.getTurnosPorFecha(fechaHoy);
-        setTurnos(turnosDelDia);
+        // Obtener turnos del día
+        const turnosDelDiaResponse = await turnosService.getTurnosPorFecha(fechaHoy);
+        setTurnos(turnosDelDiaResponse.turnos || []);
         
-        // Cargar estadísticas del mes actual (usando el año correcto del sistema)
+        // Cargar estadísticas del mes actual
         const ahora = new Date();
-        console.log('🔍 Fecha actual (Date):', ahora);
-        console.log('🔍 Año del sistema:', ahora.getFullYear());
-        console.log('🔍 Mes del sistema:', ahora.getMonth());
-        
-        // Usar el año actual del sistema (no forzar 2024)
         const añoActual = ahora.getFullYear();
-        const mesActual = ahora.getMonth(); // 0-11 (enero=0, agosto=7)
-        
-        console.log('🔍 Usando año del sistema:', añoActual);
-        console.log('🔍 Mes actual (0-11):', mesActual);
-        
+        const mesActual = ahora.getMonth(); // 0-11
         const primerDiaMes = new Date(añoActual, mesActual, 1);
         const ultimoDiaMes = new Date(añoActual, mesActual + 1, 0);
-        
-        console.log('🔍 Fechas calculadas:', {
-          primerDia: primerDiaMes,
-          ultimoDia: ultimoDiaMes,
-          primerDiaFormateado: format(primerDiaMes, 'yyyy-MM-dd'),
-          ultimoDiaFormateado: format(ultimoDiaMes, 'yyyy-MM-dd')
-        });
-        
-        const stats = await turnosService.getEstadisticas(
+
+        const statsResponse = await turnosService.getEstadisticas(
           format(primerDiaMes, 'yyyy-MM-dd'),
           format(ultimoDiaMes, 'yyyy-MM-dd')
         );
-        
-        // Procesar estadísticas
+
         const estadisticasProcesadas = {
-          total: stats.estadisticas?.total_turnos || 0,
-          pendientes: stats.estadisticas?.pendientes || 0,
-          completados: stats.estadisticas?.completados || 0,
-          enCurso: stats.estadisticas?.confirmados || 0
+          total: statsResponse.estadisticas?.total_turnos || 0,
+          pendientes: statsResponse.estadisticas?.pendientes || 0,
+          completados: statsResponse.estadisticas?.completados || 0,
+          enCurso: statsResponse.estadisticas?.confirmados || 0
         };
-        
         setEstadisticas(estadisticasProcesadas);
-        
+
       } catch (error) {
         console.error('❌ Error al cargar datos:', error);
-        
-        // Manejo específico de errores
         if (error.response?.status === 422) {
           setError('Error en el formato de fechas. Intenta recargar la página.');
         } else if (error.response?.status === 500) {
@@ -88,10 +68,7 @@ const Dashboard = () => {
     };
 
     cargarDatos();
-    
-    // Actualizar datos cada 5 minutos
-    const interval = setInterval(cargarDatos, 5 * 60 * 1000);
-    
+    const interval = setInterval(cargarDatos, 5 * 60 * 1000); // cada 5 min
     return () => clearInterval(interval);
   }, []);
 
@@ -112,25 +89,17 @@ const Dashboard = () => {
     });
   };
 
-  // Función para formatear la hora del turno
   const formatearHora = (hora) => {
-    if (typeof hora === 'string') {
-      return hora;
-    }
-    // Si es un objeto time de la base de datos
-    return `${hora.hours.toString().padStart(2, '0')}:${hora.minutes.toString().padStart(2, '0')}`;
+    if (!hora) return '';
+    return hora.slice(0, 5); // HH:MM
   };
 
-  // Función para obtener el nombre del cliente
   const obtenerNombreCliente = (turno) => {
-    // Aquí deberías tener acceso al cliente a través de la relación en la base de datos
-    // Por ahora, asumimos que el turno tiene la información del cliente
-    return turno.cliente_nombre || turno.cliente?.nombre || 'Cliente';
+    return turno.cliente?.nombre || 'Cliente';
   };
 
-  // Función para obtener el teléfono del cliente
   const obtenerTelefonoCliente = (turno) => {
-    return turno.cliente_telefono || turno.cliente?.telefono || 'Sin teléfono';
+    return turno.cliente?.telefono || 'Sin teléfono';
   };
 
   if (loading) {
@@ -164,7 +133,6 @@ const Dashboard = () => {
 
   return (
     <div className="container">
-      {/* Header */}
       <header className="header">
         <h1>Barber</h1>
         <div className="date">
@@ -173,28 +141,22 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Tarjetas de estadísticas */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="icon">
-            <Users size={24} />
-          </div>
+          <div className="icon"><Users size={24} /></div>
           <div className="number">{estadisticas.total || 0}</div>
           <div className="label">Total Turnos</div>
         </div>
-        
         <div className="stat-card">
           <span className="status-dot orange"></span>
           <div className="number">{estadisticas.pendientes || 0}</div>
           <div className="label">Pendientes</div>
         </div>
-        
         <div className="stat-card">
           <span className="status-dot green"></span>
           <div className="number">{estadisticas.completados || 0}</div>
           <div className="label">Completados</div>
         </div>
-        
         <div className="stat-card">
           <span className="status-dot blue"></span>
           <div className="number">{estadisticas.enCurso || 0}</div>
@@ -202,25 +164,23 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Sección de turnos */}
       <section className="turnos-section">
         <div className="turnos-header">
-          <h2>
-            <Scissors size={20} />
-            Turnos del Día
-          </h2>
-          <a href="#" className="ver-mas">ver más</a>
+          <h2><Scissors size={20}/> Turnos del Día</h2>
+          <button 
+            className="ver-mas-button"
+            onClick={() => setShowMonthlyCalendar(true)}
+          >
+            ver más
+          </button>
         </div>
 
         {turnos.length === 0 ? (
-          <div className="no-turnos">
-            <p>No hay turnos programados para hoy</p>
-          </div>
+          <div className="no-turnos"><p>No hay turnos programados para hoy</p></div>
         ) : (
           <div className="turnos-list">
             {turnos.map((turno) => {
               const isExpanded = expandedTurnos.has(turno.id);
-              
               return (
                 <div 
                   key={turno.id} 
@@ -232,26 +192,18 @@ const Dashboard = () => {
                       <Clock />
                       {formatearHora(turno.hora_inicio)}
                     </div>
-                    <span className={`turno-estado ${turno.estado}`}>
-                      {turno.estado}
-                    </span>
+                    <span className={`turno-estado ${turno.estado}`}>{turno.estado}</span>
                   </div>
-                  
                   <div className="cliente">
                     <User />
                     {obtenerNombreCliente(turno)}
                   </div>
-                  
-                  {/* Contenido expandible */}
                   <div className={`turno-expandible ${isExpanded ? 'show' : ''}`}>
-                    <div className="telefono">
-                      Tel: {obtenerTelefonoCliente(turno)}
-                    </div>
-                    
+                    <div className="telefono">Tel: {obtenerTelefonoCliente(turno)}</div>
                     <button 
                       className="whatsapp"
                       onClick={(e) => {
-                        e.stopPropagation(); // Evitar que se cierre la tarjeta
+                        e.stopPropagation();
                         handleWhatsApp(obtenerTelefonoCliente(turno));
                       }}
                     >
@@ -265,6 +217,11 @@ const Dashboard = () => {
           </div>
         )}
       </section>
+
+      {/* Modal del calendario mensual */}
+      {showMonthlyCalendar && (
+        <MonthlyCalendar onClose={() => setShowMonthlyCalendar(false)} />
+      )}
     </div>
   );
 };

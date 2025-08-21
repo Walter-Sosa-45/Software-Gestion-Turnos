@@ -1,7 +1,7 @@
 // Configuración de la aplicación
 export const config = {
-  // URL del backend
-  API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  // URL del backend sin el prefijo de versión
+  API_BASE_URL: import.meta.env.VITE_API_URL || 'http://192.168.0.102:8000',
   
   // Intervalo de actualización automática (en milisegundos)
   AUTO_REFRESH_INTERVAL: 5 * 60 * 1000, // 5 minutos
@@ -19,7 +19,8 @@ export const config = {
 
 // Función para obtener la URL completa de un endpoint
 export const getApiUrl = (endpoint) => {
-  return `${config.API_BASE_URL}${endpoint}`;
+  // Agrega automáticamente el prefijo /api/v1
+  return `${config.API_BASE_URL}/api/v1${endpoint}`;
 };
 
 // Función para formatear fechas

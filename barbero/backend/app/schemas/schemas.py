@@ -2,7 +2,9 @@ from pydantic import BaseModel, EmailStr, validator
 from typing import Optional, List
 from datetime import datetime, date, time
 
-# Esquemas base
+# ---------------------------
+# Esquemas para Usuarios
+# ---------------------------
 class UsuarioBase(BaseModel):
     nombre: str
     usuario: str
@@ -10,8 +12,8 @@ class UsuarioBase(BaseModel):
 
     @validator('rol')
     def validate_rol(cls, v):
-        if v not in ['admin', 'cliente']:
-            raise ValueError('El rol debe ser "admin" o "cliente"')
+        if v not in ['admin', 'barbero', 'cliente']:
+            raise ValueError('El rol debe ser "admin", "barbero" o "cliente"')
         return v
 
 class UsuarioCreate(UsuarioBase):
@@ -19,35 +21,50 @@ class UsuarioCreate(UsuarioBase):
 
 class UsuarioUpdate(BaseModel):
     nombre: Optional[str] = None
-    email: Optional[EmailStr] = None
+    usuario: Optional[str] = None
     rol: Optional[str] = None
 
     @validator('rol')
     def validate_rol(cls, v):
-        if v is not None and v not in ['admin', 'cliente']:
-            raise ValueError('El rol debe ser "admin" o "cliente"')
+        if v is not None and v not in ['admin', 'barbero', 'cliente']:
+            raise ValueError('El rol debe ser "admin", "barbero" o "cliente"')
         return v
 
 class Usuario(UsuarioBase):
     id: int
     fecha_registro: datetime
-    
-    class Config:
-        from_attributes = True
 
-class UsuarioLogin(BaseModel):
-    usuario: str
-    password: str
+    class Config:
+        orm_mode = True
 
 class LoginCredentials(BaseModel):
     usuario: str
     password: str
 
-# Esquemas para servicios
+# ---------------------------
+# Esquemas para Clientes
+# ---------------------------
+class ClienteBase(BaseModel):
+    nombre: str
+    telefono: str
+
+class ClienteCreate(ClienteBase):
+    pass
+
+class Cliente(ClienteBase):
+    id: int
+    fecha_registro: datetime
+
+    class Config:
+        orm_mode = True
+
+# ---------------------------
+# Esquemas para Servicios
+# ---------------------------
 class ServicioBase(BaseModel):
     nombre: str
     duracion_min: int
-    precio: int  # Precio en centavos
+    precio: int  # en centavos
 
     @validator('duracion_min')
     def validate_duracion(cls, v):
@@ -83,11 +100,13 @@ class ServicioUpdate(BaseModel):
 
 class Servicio(ServicioBase):
     id: int
-    
-    class Config:
-        from_attributes = True
 
-# Esquemas para turnos
+    class Config:
+        orm_mode = True
+
+# ---------------------------
+# Esquemas para Turnos
+# ---------------------------
 class TurnoBase(BaseModel):
     cliente_id: int
     servicio_id: int
@@ -104,8 +123,9 @@ class TurnoBase(BaseModel):
 
     @validator('hora_fin')
     def validate_hora_fin(cls, v, values):
-        if 'hora_inicio' in values and v <= values['hora_inicio']:
-            raise ValueError('La hora de fin debe ser posterior a la hora de inicio')
+        if 'hora_inicio' in values and values['hora_inicio'] is not None:
+            if v <= values['hora_inicio']:
+                raise ValueError('La hora de fin debe ser posterior a la hora de inicio')
         return v
 
 class TurnoCreate(TurnoBase):
@@ -133,21 +153,25 @@ class TurnoUpdate(BaseModel):
 class Turno(TurnoBase):
     id: int
     creado_en: datetime
-    cliente: Usuario
+    cliente: Cliente
     servicio: Servicio
-    
-    class Config:
-        from_attributes = True
 
-# Esquemas para respuestas
+    class Config:
+        orm_mode = True
+
+# ---------------------------
+# Esquemas para JWT / Tokens
+# ---------------------------
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
-    email: Optional[str] = None
+    usuario: Optional[str] = None
 
-# Esquemas para listas
+# ---------------------------
+# Esquemas de listas (opcional)
+# ---------------------------
 class UsuarioList(BaseModel):
     usuarios: List[Usuario]
 
@@ -157,16 +181,16 @@ class ServicioList(BaseModel):
 class TurnoList(BaseModel):
     turnos: List[Turno]
 
+# ---------------------------
 # Esquemas especiales para turnos
+# ---------------------------
 class TurnoSemanal(BaseModel):
-    """Esquema para verificar turnos semanales de un cliente"""
     cliente_id: int
     fecha_inicio: date
     fecha_fin: date
     turnos_existentes: List[Turno]
 
 class DisponibilidadTurno(BaseModel):
-    """Esquema para verificar disponibilidad de un horario"""
     fecha: date
     hora_inicio: time
     hora_fin: time
