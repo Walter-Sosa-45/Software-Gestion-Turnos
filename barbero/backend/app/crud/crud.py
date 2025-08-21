@@ -133,6 +133,19 @@ def verificar_disponibilidad_turno(db: Session, fecha: date, hora_inicio: time, 
     Verifica si hay disponibilidad para un turno en la fecha y horario especificados.
     Retorna True si está disponible, False si hay conflicto.
     """
+    # Verificar que la fecha no sea pasada
+    fecha_actual = date.today()
+    if fecha < fecha_actual:
+        return False
+    
+    # Si es el día actual, verificar que la hora no sea pasada
+    if fecha == fecha_actual:
+        hora_actual = datetime.now().time()
+        # Permitir agendar con al menos 30 minutos de anticipación
+        hora_minima = (datetime.combine(date.today(), hora_actual) + timedelta(minutes=30)).time()
+        if hora_inicio <= hora_minima:
+            return False
+    
     # Buscar turnos que se superpongan con el horario solicitado
     turnos_conflicto = db.query(Turno).filter(
         and_(
@@ -156,6 +169,11 @@ def get_horarios_disponibles(db: Session, fecha: date) -> List[str]:
     Obtiene los horarios disponibles para una fecha específica.
     Retorna una lista de horarios en formato "HH:MM".
     """
+    # Verificar que la fecha no sea pasada
+    fecha_actual = date.today()
+    if fecha < fecha_actual:
+        return []
+    
     # Horarios de trabajo (9:00 a 22:00, cada 30 minutos)
     horarios_trabajo = []
     hora_actual = time(9, 0)  # 9:00 AM
@@ -165,6 +183,13 @@ def get_horarios_disponibles(db: Session, fecha: date) -> List[str]:
         horarios_trabajo.append(hora_actual.strftime("%H:%M"))
         # Avanzar 30 minutos
         hora_actual = (datetime.combine(date.today(), hora_actual) + timedelta(minutes=30)).time()
+    
+    # Si es el día actual, filtrar horarios pasados
+    if fecha == fecha_actual:
+        hora_actual_dt = datetime.now()
+        hora_actual_str = hora_actual_dt.strftime("%H:%M")
+        # Solo mostrar horarios que sean al menos 30 minutos después de la hora actual
+        horarios_trabajo = [h for h in horarios_trabajo if h > hora_actual_str]
     
     # Obtener turnos existentes para esa fecha
     turnos_existentes = db.query(Turno).filter(

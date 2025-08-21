@@ -172,6 +172,19 @@ def crear_turno_desde_cliente(turno_data: dict, db: Session = Depends(get_db)):
         hora_dt = datetime.strptime(hora_str, "%H:%M").time()
         hora_fin_dt = (datetime.combine(fecha_dt, hora_dt) + timedelta(minutes=30)).time()
 
+        # Validar que la fecha no sea pasada
+        fecha_actual = datetime.now().date()
+        if fecha_dt < fecha_actual:
+            raise HTTPException(status_code=400, detail="No se pueden agendar turnos para fechas pasadas")
+
+        # Si es el día actual, validar que la hora no sea pasada
+        if fecha_dt == fecha_actual:
+            hora_actual = datetime.now().time()
+            # Permitir agendar con al menos 30 minutos de anticipación
+            hora_minima = (datetime.combine(date.today(), hora_actual) + timedelta(minutes=30)).time()
+            if hora_dt <= hora_minima:
+                raise HTTPException(status_code=400, detail="No se pueden agendar turnos para horarios pasados. Mínimo 30 minutos de anticipación")
+
         # Buscar o crear cliente
         cliente = crud.get_cliente_by_telefono(db, telefono)
         if not cliente:
@@ -217,6 +230,19 @@ def crear_turno_desde_cliente_legacy(turno_data: dict, db: Session = Depends(get
         fecha_dt = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         hora_dt = datetime.strptime(hora_str, "%H:%M").time()
         hora_fin_dt = (datetime.combine(fecha_dt, hora_dt) + timedelta(minutes=30)).time()
+
+        # Validar que la fecha no sea pasada
+        fecha_actual = datetime.now().date()
+        if fecha_dt < fecha_actual:
+            raise HTTPException(status_code=400, detail="No se pueden agendar turnos para fechas pasadas")
+
+        # Si es el día actual, validar que la hora no sea pasada
+        if fecha_dt == fecha_actual:
+            hora_actual = datetime.now().time()
+            # Permitir agendar con al menos 30 minutos de anticipación
+            hora_minima = (datetime.combine(date.today(), hora_actual) + timedelta(minutes=30)).time()
+            if hora_dt <= hora_minima:
+                raise HTTPException(status_code=400, detail="No se pueden agendar turnos para horarios pasados. Mínimo 30 minutos de anticipación")
 
         # Buscar o crear cliente
         cliente = crud.get_cliente_by_telefono(db, telefono)
