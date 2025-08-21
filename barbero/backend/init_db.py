@@ -59,9 +59,10 @@ def create_initial_data():
         # Crear servicios básicos
         servicios = [
             {"nombre": "Corte de cabello", "duracion_min": 30, "precio": 2500},
-            {"nombre": "Barba", "duracion_min": 20, "precio": 1500},
+            {"nombre": "Arreglo de barba", "duracion_min": 20, "precio": 1500},
             {"nombre": "Corte + Barba", "duracion_min": 45, "precio": 3500},
-            {"nombre": "Afeitado tradicional", "duracion_min": 25, "precio": 2000}
+            {"nombre": "Tinte", "duracion_min": 60, "precio": 5000},
+            {"nombre": "Peinado", "duracion_min": 30, "precio": 2000}
         ]
         
         for servicio_data in servicios:

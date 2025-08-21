@@ -451,3 +451,107 @@ def cancelar_turnos_cliente_semana(
         "turnos_cancelados": turnos_cancelados,
         "message": f"Se cancelaron {turnos_cancelados} turnos"
     }
+
+# Nuevos endpoints para el frontend del cliente
+@router.get("/turnos/horarios-disponibles/{fecha}", tags=["turnos"])
+def obtener_horarios_disponibles(fecha: str, db: Session = Depends(get_db)):
+    """Obtener horarios disponibles para una fecha específica"""
+    try:
+        fecha_dt = datetime.strptime(fecha, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido. Use YYYY-MM-DD")
+    
+    # Horarios base del negocio
+    horarios_base = [
+        "09:00", "10:30", "12:00",  # Mañana
+        "16:00", "17:30", "19:00",  # Tarde
+        "21:00", "22:30"            # Noche
+    ]
+    
+    # Obtener turnos existentes para esa fecha
+    turnos_existentes = crud.get_turnos_por_fecha(db, fecha_dt)
+    
+    # Filtrar horarios ocupados
+    horarios_ocupados = set()
+    for turno in turnos_existentes:
+        if turno.estado in ['pendiente', 'confirmado']:
+            horarios_ocupados.add(turno.hora_inicio.strftime("%H:%M"))
+    
+    # Filtrar horarios disponibles
+    horarios_disponibles = [h for h in horarios_base if h not in horarios_ocupados]
+    
+    return {
+        "fecha": fecha,
+        "horarios_disponibles": horarios_disponibles,
+        "horarios_ocupados": list(horarios_ocupados),
+        "total_disponibles": len(horarios_disponibles)
+    }
+
+@router.post("/turnos/crear-desde-cliente", tags=["turnos"])
+def crear_turno_desde_cliente(turno_data: dict, db: Session = Depends(get_db)):
+    """Crear un turno desde el frontend del cliente (sin autenticación)"""
+    try:
+        # Extraer datos del turno
+        nombre_cliente = turno_data.get("nombre")
+        apellido_cliente = turno_data.get("apellido")
+        telefono_cliente = turno_data.get("telefono")
+        nombre_servicio = turno_data.get("servicio")
+        fecha = turno_data.get("fecha")
+        hora = turno_data.get("hora")
+        
+        if not all([nombre_cliente, apellido_cliente, telefono_cliente, nombre_servicio, fecha, hora]):
+            raise HTTPException(status_code=400, detail="Todos los campos son requeridos")
+        
+        # Convertir fecha y hora
+        fecha_dt = datetime.strptime(fecha, "%Y-%m-%d").date()
+        hora_dt = datetime.strptime(hora, "%H:%M").time()
+        
+        # Calcular hora de fin (asumiendo 30 minutos por servicio)
+        hora_fin_dt = datetime.combine(fecha_dt, hora_dt)
+        hora_fin_dt = hora_fin_dt + timedelta(minutes=30)
+        hora_fin_dt = hora_fin_dt.time()
+        
+        # Buscar o crear cliente
+        cliente = crud.get_usuario_by_telefono(db, telefono_cliente)
+        if not cliente:
+            # Crear nuevo cliente
+            cliente_data = {
+                "nombre": f"{nombre_cliente} {apellido_cliente}",
+                "usuario": f"cliente_{telefono_cliente}",
+                "password": "cliente_temp",  # Contraseña temporal
+                "rol": "cliente"
+            }
+            cliente = crud.create_usuario(db, schemas.UsuarioCreate(**cliente_data))
+        
+        # Buscar servicio
+        servicio = crud.get_servicio_by_nombre(db, nombre_servicio)
+        if not servicio:
+            raise HTTPException(status_code=400, detail="Servicio no encontrado")
+        
+        # Verificar disponibilidad
+        if not crud.verificar_disponibilidad_turno(db, fecha_dt, hora_dt, hora_fin_dt):
+            raise HTTPException(status_code=400, detail="El horario no está disponible")
+        
+        # Crear turno
+        turno_data_db = {
+            "cliente_id": cliente.id,
+            "servicio_id": servicio.id,
+            "fecha": fecha_dt,
+            "hora_inicio": hora_dt,
+            "hora_fin": hora_fin_dt,
+            "estado": "pendiente"
+        }
+        
+        turno = crud.create_turno(db, schemas.TurnoCreate(**turno_data_db))
+        
+        return {
+            "message": "Turno creado exitosamente",
+            "turno_id": turno.id,
+            "cliente": cliente.nombre,
+            "servicio": servicio.nombre,
+            "fecha": fecha,
+            "hora": hora
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al crear turno: {str(e)}")

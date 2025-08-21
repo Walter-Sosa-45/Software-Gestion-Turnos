@@ -14,6 +14,10 @@ def get_usuario(db: Session, usuario_id: int) -> Optional[Usuario]:
 def get_usuario_by_usuario(db: Session, usuario: str) -> Optional[Usuario]:
     return db.query(Usuario).filter(Usuario.usuario == usuario).first()
 
+def get_usuario_by_telefono(db: Session, telefono: str) -> Optional[Usuario]:
+    """Obtener usuario por teléfono (usando el campo usuario como teléfono)"""
+    return db.query(Usuario).filter(Usuario.usuario == f"cliente_{telefono}").first()
+
 def get_usuarios(db: Session, skip: int = 0, limit: int = 100, rol: Optional[str] = None) -> List[Usuario]:
     query = db.query(Usuario)
     if rol:
@@ -86,6 +90,10 @@ def delete_servicio(db: Session, servicio_id: int) -> bool:
         db.commit()
         return True
     return False
+
+def get_servicio_by_nombre(db: Session, nombre: str) -> Optional[Servicio]:
+    """Obtener servicio por nombre"""
+    return db.query(Servicio).filter(Servicio.nombre == nombre).first()
 
 # Funciones CRUD para Turnos
 def get_turno(db: Session, turno_id: int) -> Optional[Turno]:
