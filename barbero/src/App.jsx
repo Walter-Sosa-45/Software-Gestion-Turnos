@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import './App.css';
+// import './App.css';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }) => {

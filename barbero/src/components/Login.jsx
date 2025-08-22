@@ -65,6 +65,7 @@ const Login = () => {
                 type="text"
                 id="usuario"
                 name="usuario"
+                className="login-input"
                 value={formData.usuario}
                 onChange={handleChange}
                 placeholder="Ingresa tu usuario"
@@ -82,6 +83,7 @@ const Login = () => {
                 type="password"
                 id="password"
                 name="password"
+                className="login-input"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Ingresa tu contraseña"
