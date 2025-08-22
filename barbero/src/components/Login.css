@@ -18,27 +18,89 @@
 } */
  
 .login-input {
-  /* borrar estilos nativos */
+  /* reset nativo */
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
+  box-sizing: border-box;
 
-  /* estilo propio */
-  /* width: 100%;
-  padding: 12px 12px 12px 40px;
+  /* estilo personalizado */
+  width: 100%;
+  padding: 12px 12px 12px 40px; /* espacio para el icono */
   border: 2px solid #e1e5e9;
   border-radius: 10px;
   background: #f8f9fa;
   font-size: 16px;
-  transition: border-color .3x ease, box-shadow .3s ease; */
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* .login-input:focus {
-  outline: none;                      
-  border-color: #667eea;               
+.login-input:focus {
+  outline: none;
+  border-color: #667eea;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(102,126,234,.15);
-} */
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.login-input:disabled {
+  background: #f1f3f4;
+  cursor: not-allowed;
+}
+
+/* ---------- WRAPPER DEL INPUT CON ICONO ---------- */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 2px solid #e1e5e9;
+  border-radius: 10px;
+  padding: 0 12px;
+  height: 44px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.input-wrapper:focus-within {
+  border-color: #667eea;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-icon {
+  color: #999;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  position: absolute;
+  left: 12px;
+  z-index: 2;
+}
+
+/* Ajustes extra para el input dentro del wrapper (sobrecarga de .login-input) */
+.input-wrapper input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  outline: none;
+  width: 100%;
+  height: 100%;
+  padding: 0 0 0 40px;
+  margin: 0;
+  box-shadow: none;
+  position: relative;
+  z-index: 1;
+}
+
+.input-wrapper input::placeholder {
+  color: #aaa;
+  opacity: 0.8;
+}
+
+.input-wrapper input:disabled {
+  background: transparent;
+  cursor: not-allowed;
+}
 
 .login-card h2 {
   text-align: center;
@@ -87,64 +149,6 @@
   color: #555;
   font-weight: 500;
   font-size: 14px;
-} */
-
-/* .login-container .input-wrapper {
-  display: flex;
-  align-items: center;
-  background: #f8f9fa;
-  border: 2px solid #e1e5e9;
-  border-radius: 10px;
-  padding: 0 12px;
-  height: 40px;
-  transition: all 0.3s ease;
-  overflow: hidden;
-  position: relative;
-} */
-
-/* .login-container .input-wrapper:focus-within {
-  border-color: #667eea;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-} */
-
-/* .login-container .input-wrapper .input-icon {
-  color: #999;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  margin-right: 12px;
-  position: absolute;
-  left: 12px;
-  z-index: 2;
-} */
-
-/* .login-container .input-wrapper input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 16px;
-  outline: none;
-  height: 100%;
-  width: 100%;
-  padding: 0 0 0 40px;
-  margin: 0;
-  box-shadow: none;
-  position: relative;
-  z-index: 1;
-} */
-
-/* .login-container .input-wrapper input::placeholder {
-  color: #aaa;
-  opacity: 0.8;
-  position: relative;
-  z-index: 1;
-  padding-left: 4px;
-} */
-
-/* .login-container .input-wrapper input:disabled {
-  background: transparent;
-  cursor: not-allowed;
 } */
 
 .login-button {
