@@ -1,1 +1,0 @@
-# Paquete de esquemas Pydantic
