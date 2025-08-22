@@ -56,13 +56,16 @@
 }
 
 .form-group input {
-  width: 100%;
-  padding: 12px 12px 12px 40px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   border: 2px solid #e1e5e9;
   border-radius: 10px;
+  width: 100%;
+  padding: 12px 12px 12px 40px;
   font-size: 16px;
-  transition: all 0.3s ease;
   background: #f8f9fa;
+  transition: all 0.3s ease;
 }
 
 .form-group input:focus {
