@@ -7,21 +7,32 @@ import { useAuth } from '../context/AuthContext';
 import MonthlyCalendar from './MonthlyCalendar';
 import BloqueoModal from './BloqueoModal';
 import '../styles/Dashboard.css';
+import NotificationPanel from './Notification';
+import BookingSection from './BookingSection';
 
 const Dashboard = () => {
   const { logout, user, loading: authLoading } = useAuth();
   const [expandedTurnos, setExpandedTurnos] = useState(new Set());
   const [turnos, setTurnos] = useState([]);
   const [estadisticas, setEstadisticas] = useState({});
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);  // solo para el primer render
+  const [refreshing, setRefreshing] = useState(false);         // para recargas silenciosas
+
   const [error, setError] = useState(null);
   const [showMonthlyCalendar, setShowMonthlyCalendar] = useState(false);
+  const [showBookingSection, setShowBookingSection] = useState(false);
   const [showBloqueoModal, setShowBloqueoModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
   
   const fechaActual = new Date();
   const diaSemana = format(fechaActual, 'EEEE', { locale: es });
   const diaMes = format(fechaActual, 'dd', { locale: es });
   const mes = format(fechaActual, 'MMMM', { locale: es });
+
+  const [notifications, setNotifications] = useState([]);
+
 
   // Mostrar loading mientras se inicializa la autenticación
   if (authLoading) {
@@ -43,19 +54,31 @@ const Dashboard = () => {
   }
 
   useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+        const cargarDatos = async (isInitial = false) => {
+          try {
+            if (isInitial) {
+              setInitialLoading(true);
+            } else {
+              setRefreshing(true); // no muestra modal, solo actualiza en background
+            }
+            setError(null);
+
+            const fechaHoy = format(new Date(), 'yyyy-MM-dd');
+            const turnosDelDiaResponse = await turnosService.getTurnosPorFecha(fechaHoy);
+            setTurnos(turnosDelDiaResponse.turnos || []);
+
+            const notificacionesResponse = await turnosService.getTurnosNoNotificados();
+            setNotifications(
+              (notificacionesResponse || []).map(t => ({
+                id: t.id,
+                mensaje: `Nuevo turno de ${t.cliente || 'Cliente'} el ${t.fecha} a las ${t.hora_inicio}`,
+                leida: false
+              }))
+          );
         
-        const fechaHoy = format(new Date(), 'yyyy-MM-dd');
-        console.log('🔍 Fecha actual:', fechaHoy);
+      
         
-        // Obtener turnos del día
-        const turnosDelDiaResponse = await turnosService.getTurnosPorFecha(fechaHoy);
-        setTurnos(turnosDelDiaResponse.turnos || []);
-        
-        // Cargar estadísticas del mes actual
+
         const ahora = new Date();
         const añoActual = ahora.getFullYear();
         const mesActual = ahora.getMonth(); // 0-11
@@ -87,12 +110,16 @@ const Dashboard = () => {
           setError('Error al cargar los datos. Intenta recargar la página.');
         }
       } finally {
-        setLoading(false);
+          if (isInitial) {
+            setInitialLoading(false);
+          } else {
+            setRefreshing(false);
+          }
       }
     };
 
-    cargarDatos();
-    const interval = setInterval(cargarDatos, 5 * 60 * 1000); // cada 5 min
+    cargarDatos(true);
+   const interval = setInterval(() => cargarDatos(false), 1 * 60 * 1000); // cada 1 min
     return () => clearInterval(interval);
   }, []);
 
@@ -107,10 +134,23 @@ const Dashboard = () => {
     }
   };
 
-  const handleNotifications = () => {
-    // Aquí puedes implementar la lógica para mostrar notificaciones
-    alert('Funcionalidad de notificaciones próximamente disponible');
-  };
+  const handleNotifications = async () => {
+  setShowNotifications(prev => !prev);
+  console.log('🔔 Click en notificaciones');
+
+  // if (!showNotifications && notifications.length > 0) {
+  //   // Llamar al backend para marcar los turnos como notificados
+  //   try {
+  //     await turnosService.marcarTurnosLeidas();
+
+  //     // Actualizar el estado local para que desaparezcan del badge
+  //     setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
+  //   } catch (error) {
+  //     console.error('❌ Error al marcar turnos como notificados:', error);
+  //   }
+  // }
+};
+
 
   const toggleTurnoExpansion = (turnoId) => {
     setExpandedTurnos(prev => {
@@ -137,7 +177,7 @@ const Dashboard = () => {
     return turno.cliente?.telefono || 'Sin teléfono';
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="container">
         <div className="loading-container">
@@ -181,14 +221,40 @@ const Dashboard = () => {
             <span className="user-name">{user?.nombre || 'Usuario'}</span>
           </div>
           <div className="notification-icon" onClick={handleNotifications}>
-            <Bell size={24} />
-            <span className="notification-badge">3</span>
+            <Bell size={30} />
+            {notifications.filter(n => !n.leida).length > 0 && (
+              <span className="notification-badge">
+                {notifications.filter(n => !n.leida).length}
+              </span>
+            )}
+              {refreshing && (
+                  <span className="refresh-spinner"></span>
+              )}
           </div>
           <div className="logout-icon" onClick={handleLogout}>
-            <LogOut size={24} />
+            <LogOut size={30} />
           </div>
         </div>
       </header>
+
+      {showNotifications && (
+        <NotificationPanel 
+          notifications={notifications.filter(n => !n.leida)} 
+          onClose={async () => {
+              setShowNotifications(false);
+
+      // Llamar al backend para marcar turnos como leídos
+          try {
+            await turnosService.marcarTurnosLeidas();
+            setNotifications(prev => prev.map(n => ({ ...n, leida: true })));
+          } catch (error) {
+            console.error('❌ Error al marcar turnos como notificados:', error);
+          }
+         }} 
+
+        />  
+      )}
+
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -218,19 +284,28 @@ const Dashboard = () => {
       <section className="turnos-section">
         <div className="turnos-header">
           <h2><Scissors size={20}/> Turnos del Día</h2>
-          <button 
-            className="ver-mas-button"
-            onClick={() => setShowMonthlyCalendar(true)}
-          >
-            ver más
-          </button>
-          <button
-            className="ver-mas-button"
-            onClick={() => setShowBloqueoModal(true)}
-            title="Bloquear agenda"
-          >
-            <Lock size={16} /> bloquear
-          </button>
+          <div className="panel-buttons">
+              <button 
+                className="buttons-panel"
+                onClick={() => setShowBookingSection(true)}
+              >
+              turno
+              </button>
+              <button 
+                 className="buttons-panel"
+                 onClick={() => setShowMonthlyCalendar(true)}
+               >
+              ver más
+              </button>
+              <button
+                className="buttons-panel"
+                onClick={() => setShowBloqueoModal(true)}
+                title="Bloquear agenda"
+              >
+                {/* <Lock size={16} /> */}
+                bloquear
+              </button>
+          </div>
         </div>
 
         {turnos.length === 0 ? (
@@ -275,6 +350,13 @@ const Dashboard = () => {
           </div>
         )}
       </section>
+      
+      {/* Agendar Turnos */}
+      {showBookingSection && (
+        <BookingSection 
+        isVisible={setShowBookingSection}
+        onClose={() => setShowBookingSection(false)}/>
+      )}
 
       {/* Modal del calendario mensual */}
       {showMonthlyCalendar && (
@@ -293,7 +375,7 @@ const Dashboard = () => {
         />
       )}
     </div>
-  );
-};
+    );
+}
 
 export default Dashboard;

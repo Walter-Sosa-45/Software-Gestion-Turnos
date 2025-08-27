@@ -99,7 +99,8 @@ def create_turno(db: Session, cliente_id: int, servicio_id: int, fecha: date, ho
         fecha=fecha,
         hora_inicio=hora_inicio,
         hora_fin=hora_fin,
-        estado="pendiente"
+        estado="pendiente",
+        notificado=False
     )
     db.add(db_turno)
     db.commit()

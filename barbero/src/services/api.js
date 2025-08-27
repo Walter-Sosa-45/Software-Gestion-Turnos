@@ -115,7 +115,30 @@ export const turnosService = {
       params: { fecha_inicio: fechaInicio, fecha_fin: fechaFin }
     });
     return response.data;
+  },
+
+  getTurnosNoNotificados: async () => {
+  const response = await api.get('/turnos/no-notificados'); // ruta exacta en FastAPI
+  return response.data;
+  },
+  
+  marcarTurnosLeidas: async () => {
+    const response = await api.put('/notificaciones/marcar-leidas');
+    return response.data;
+  },
+
+  getHorariosDisponibles: async (fecha) => {
+    const response = await api.get('/turnos/disponibilidad', { params: { fecha } });
+    return response.data;
+  },
+
+  verificarDisponibilidad: async (fecha, horaInicio, horaFin) => {
+    const response = await api.get('/turnos/disponibilidad', {
+      params: { fecha, hora_inicio: horaInicio, hora_fin: horaFin }
+    });
+    return response.data;
   }
+
 };
 
 // Servicios de bloqueos
@@ -182,6 +205,9 @@ export const serviciosService = {
     const response = await api.put(`/servicios/${id}`, servicioData);
     return response.data;
   }
+  
 };
+
+
 
 export default api;

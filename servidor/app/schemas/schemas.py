@@ -114,6 +114,7 @@ class TurnoBase(BaseModel):
     hora_inicio: time
     hora_fin: time
     estado: str
+    notificado: Optional[bool] = False
 
     @validator('estado')
     def validate_estado(cls, v):
@@ -136,6 +137,7 @@ class TurnoUpdate(BaseModel):
     hora_inicio: Optional[time] = None
     hora_fin: Optional[time] = None
     estado: Optional[str] = None
+    notificado: Optional[bool]
 
     @validator('estado')
     def validate_estado(cls, v):
@@ -155,6 +157,7 @@ class Turno(TurnoBase):
     creado_en: datetime
     cliente: Cliente
     servicio: Servicio
+    notificado: bool
 
     class Config:
         orm_mode = True

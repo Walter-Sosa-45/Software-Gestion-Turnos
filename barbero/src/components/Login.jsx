@@ -26,6 +26,13 @@ const Login = () => {
     try {
       console.log('🔐 Intentando iniciar sesión con:', { usuario: formData.usuario, password: '***' });
       await login(formData);
+
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+      console.warn("⚠️ No hay token aún");
+      return;
+      }
+
     } catch (error) {
       console.error('❌ Error en login:', error);
       // El error ya se maneja en el contexto, pero podemos agregar más información aquí

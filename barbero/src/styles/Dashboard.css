@@ -14,6 +14,7 @@
     position: relative;
   }
   
+
   .title-bock {
     display: flex;
     flex-direction: column;
@@ -63,6 +64,28 @@
     border-radius: 6px;
     border: 1px solid rgba(102, 126, 234, 0.2);
   }
+
+  .refresh-spinner {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ccc;
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.notification-icon {
+  position: relative;
+  cursor: pointer;
+}
+
   
   .header-right .notification-icon,
   .header-right .logout-icon {
@@ -181,13 +204,16 @@
   
   .turnos-header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
     align-items: center;
     margin-bottom: 20px;
     animation: slideInRight 0.6s ease-out 0.5s both;
   }
   
   .turnos-header h2 {
+    width: 100%;
+    text-align: left;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -196,8 +222,20 @@
     color: var(--primary-color, #667eea);
   }
   
-  .ver-mas,
-  .ver-mas-button {
+  /* .turno {
+  font-size: 20px;
+  padding: 2px 5px;
+  text-align: center;
+  background: none;
+  color: var(--secondary-color, #666);
+  cursor: pointer;
+  border: 1px solid #e1e5e9;
+  padding: 8px;
+  border-radius: 20px;
+  
+} */
+  
+  .buttons-panel {
     background: #f8f9fa;
     color: var(--secondary-color, #666);
     padding: 8px 16px;
@@ -206,6 +244,7 @@
     font-size: 14px;
     border: 1px solid #e1e5e9;
     transition: all 0.3s ease;
+    margin: 10px;
   }
   
   .ver-mas:hover,

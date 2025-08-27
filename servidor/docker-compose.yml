@@ -1,0 +1,15 @@
+services:
+  api:
+    build: .
+    container_name: gestion-turnos-api
+    environment:
+      - ENV=${ENV}
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL_EXTERNAL}
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import routes
-from app.core.config import global_engine, tenant_engine, GlobalBase, TenantBase
+from app.core.config import tenant_engine, TenantBase
+import os
 
 app = FastAPI(
     title="Sistema de Gestión de Turnos",
@@ -24,7 +25,6 @@ app.include_router(routes.router, prefix="/api/v1")
 @app.on_event("startup")
 def ensure_tables():
     try:
-        GlobalBase.metadata.create_all(bind=global_engine)
         TenantBase.metadata.create_all(bind=tenant_engine)
     except Exception:
         # En caso de error, dejamos que el servidor siga y se vea en logs
@@ -40,4 +40,4 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(os.environ.get("PORT",8000))

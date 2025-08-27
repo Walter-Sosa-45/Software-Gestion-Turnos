@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime, date, time, timedelta
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 
-from app.core.config import get_global_db, get_tenant_db, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.dependencies.dependencies import get_current_user  # tu dependencia JWT que devuelve el usuario
+from sqlalchemy.orm import Session
+
+from app.core.config import get_tenant_db, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.crud import crud
 from app.schemas import schemas
+from app.models.models import Turno
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -28,7 +32,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 # --- Autenticación ---
 @router.post("/auth/login", tags=["autenticación"])
-def login(credentials: schemas.LoginCredentials, db: Session = Depends(get_global_db)):
+def login(credentials: schemas.LoginCredentials, db: Session = Depends(get_tenant_db_dep)):
     
     print("=== Intente de Login ===")
     print("=== Usuario recibido: ", credentials.usuario)
@@ -60,13 +64,13 @@ def login(credentials: schemas.LoginCredentials, db: Session = Depends(get_globa
 
 # --- Usuarios ---
 @router.post("/usuarios/", response_model=schemas.Usuario, tags=["usuarios"])
-def create_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_global_db)):
+def create_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_tenant_db_dep)):
     if crud.get_usuario_by_usuario(db, usuario.usuario):
         raise HTTPException(status_code=400, detail="El nombre de usuario ya está registrado")
     return crud.create_usuario(db=db, usuario=usuario)
 
 @router.get("/usuarios/", response_model=List[schemas.Usuario], tags=["usuarios"])
-def read_usuarios(skip: int = 0, limit: int = 100, rol: Optional[str] = None, db: Session = Depends(get_global_db)):
+def read_usuarios(skip: int = 0, limit: int = 100, rol: Optional[str] = None, db: Session = Depends(get_tenant_db_dep)):
     return crud.get_usuarios(db, skip=skip, limit=limit, rol=rol)
 
 # --- Servicios ---
@@ -108,7 +112,7 @@ def update_servicio(servicio_id: int, servicio_update: dict, db: Session = Depen
 
 # --- Endpoints adicionales para usuarios ---
 @router.get("/usuarios/{usuario_id}", response_model=schemas.Usuario, tags=["usuarios"])
-def get_usuario(usuario_id: int, db: Session = Depends(get_global_db)):
+def get_usuario(usuario_id: int, db: Session = Depends(get_tenant_db_dep)):
     """Obtiene un usuario específico por ID"""
     usuario = crud.get_usuario(db, usuario_id)
     if not usuario:
@@ -116,7 +120,7 @@ def get_usuario(usuario_id: int, db: Session = Depends(get_global_db)):
     return usuario
 
 @router.put("/usuarios/{usuario_id}", response_model=schemas.Usuario, tags=["usuarios"])
-def update_usuario(usuario_id: int, usuario_update: dict, db: Session = Depends(get_global_db)):
+def update_usuario(usuario_id: int, usuario_update: dict, db: Session = Depends(get_tenant_db_dep)):
     """Actualiza un usuario existente"""
     try:
         usuario = crud.get_usuario(db, usuario_id)
@@ -227,6 +231,8 @@ def crear_turno_desde_cliente(turno_data: dict, db: Session = Depends(get_tenant
 
         # Crear turno
         turno = crud.create_turno(db, cliente.id, servicio.id, fecha_dt, hora_dt, hora_fin_dt)
+        
+# -----------------------------------
 
         return {
             "message": "Turno creado exitosamente",
@@ -236,67 +242,68 @@ def crear_turno_desde_cliente(turno_data: dict, db: Session = Depends(get_tenant
             "fecha": fecha_str,
             "hora": hora_str
         }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear turno: {str(e)}")
 
 # --- Crear turno desde cliente (frontend) ---
-@router.post("/turnos/crear-desde-cliente", tags=["turnos"])
-def crear_turno_desde_cliente_legacy(turno_data: dict, db: Session = Depends(get_tenant_db_dep)):
-    try:
-        nombre = turno_data.get("nombre")
-        apellido = turno_data.get("apellido")
-        telefono = turno_data.get("telefono")
-        servicio_nombre = turno_data.get("servicio")
-        fecha_str = turno_data.get("fecha")
-        hora_str = turno_data.get("hora")
+# @router.post("/turnos/crear-desde-cliente", tags=["turnos"])
+# def crear_turno_desde_cliente_legacy(turno_data: dict, db: Session = Depends(get_tenant_db_dep)):
+#     try:
+#         nombre = turno_data.get("nombre")
+#         apellido = turno_data.get("apellido")
+#         telefono = turno_data.get("telefono")
+#         servicio_nombre = turno_data.get("servicio")
+#         fecha_str = turno_data.get("fecha")
+#         hora_str = turno_data.get("hora")
 
-        if not all([nombre, apellido, telefono, servicio_nombre, fecha_str, hora_str]):
-            raise HTTPException(status_code=400, detail="Todos los campos son requeridos")
+#         if not all([nombre, apellido, telefono, servicio_nombre, fecha_str, hora_str]):
+#             raise HTTPException(status_code=400, detail="Todos los campos son requeridos")
 
-        fecha_dt = datetime.strptime(fecha_str, "%Y-%m-%d").date()
-        hora_dt = datetime.strptime(hora_str, "%H:%M").time()
-        hora_fin_dt = (datetime.combine(fecha_dt, hora_dt) + timedelta(minutes=30)).time()
+#         fecha_dt = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+#         hora_dt = datetime.strptime(hora_str, "%H:%M").time()
+#         hora_fin_dt = (datetime.combine(fecha_dt, hora_dt) + timedelta(minutes=30)).time()
 
-        # Validar que la fecha no sea pasada
-        fecha_actual = datetime.now().date()
-        if fecha_dt < fecha_actual:
-            raise HTTPException(status_code=400, detail="No se pueden agendar turnos para fechas pasadas")
+#         # Validar que la fecha no sea pasada
+#         fecha_actual = datetime.now().date()
+#         if fecha_dt < fecha_actual:
+#             raise HTTPException(status_code=400, detail="No se pueden agendar turnos para fechas pasadas")
 
-        # Si es el día actual, validar que la hora no sea pasada
-        if fecha_dt == fecha_actual:
-            hora_actual = datetime.now().time()
-            # Permitir agendar con al menos 30 minutos de anticipación
-            hora_minima = (datetime.combine(date.today(), hora_actual) + timedelta(minutes=30)).time()
-            if hora_dt <= hora_minima:
-                raise HTTPException(status_code=400, detail="No se pueden agendar turnos para horarios pasados. Mínimo 30 minutos de anticipación")
+#         # Si es el día actual, validar que la hora no sea pasada
+#         if fecha_dt == fecha_actual:
+#             hora_actual = datetime.now().time()
+#             # Permitir agendar con al menos 30 minutos de anticipación
+#             hora_minima = (datetime.combine(date.today(), hora_actual) + timedelta(minutes=30)).time()
+#             if hora_dt <= hora_minima:
+#                 raise HTTPException(status_code=400, detail="No se pueden agendar turnos para horarios pasados. Mínimo 30 minutos de anticipación")
 
-        # Buscar o crear cliente
-        cliente = crud.get_cliente_by_telefono(db, telefono)
-        if not cliente:
-            cliente = crud.create_cliente(db, f"{nombre} {apellido}", telefono)
+#         # Buscar o crear cliente
+#         cliente = crud.get_cliente_by_telefono(db, telefono)
+#         if not cliente:
+#             cliente = crud.create_cliente(db, f"{nombre} {apellido}", telefono)
 
-        # Buscar servicio
-        servicio = crud.get_servicio_by_nombre(db, servicio_nombre)
-        if not servicio:
-            raise HTTPException(status_code=400, detail="Servicio no encontrado")
+#         # Buscar servicio
+#         servicio = crud.get_servicio_by_nombre(db, servicio_nombre)
+#         if not servicio:
+#             raise HTTPException(status_code=400, detail="Servicio no encontrado")
 
-        # Verificar disponibilidad
-        if not crud.verificar_disponibilidad_turno(db, fecha_dt, hora_dt, hora_fin_dt):
-            raise HTTPException(status_code=400, detail="El horario no está disponible")
+#         # Verificar disponibilidad
+#         if not crud.verificar_disponibilidad_turno(db, fecha_dt, hora_dt, hora_fin_dt):
+#             raise HTTPException(status_code=400, detail="El horario no está disponible")
 
-        # Crear turno
-        turno = crud.create_turno(db, cliente.id, servicio.id, fecha_dt, hora_dt, hora_fin_dt)
+#         # Crear turno
+#         turno = crud.create_turno(db, cliente.id, servicio.id, fecha_dt, hora_dt, hora_fin_dt)
 
-        return {
-            "message": "Turno creado exitosamente",
-            "turno_id": turno.id,
-            "cliente": cliente.nombre,
-            "servicio": servicio.nombre,
-            "fecha": fecha_str,
-            "hora": hora_str
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al crear turno: {str(e)}")
+#         return {
+#             "message": "Turno creado exitosamente",
+#             "turno_id": turno.id,
+#             "cliente": cliente.nombre,
+#             "servicio": servicio.nombre,
+#             "fecha": fecha_str,
+#             "hora": hora_str
+#         }
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error al crear turno: {str(e)}")
 
 # --- Endpoints adicionales para el frontend del barbero ---
 
@@ -410,3 +417,52 @@ def verificar_bloqueos_fecha(fecha: str, db: Session = Depends(get_tenant_db_dep
         return {"bloqueos": bloqueos}
     except ValueError:
         raise HTTPException(status_code=400, detail="Formato de fecha inválido. Use YYYY-MM-DD")
+    
+
+# --- OBTENER NOTIFICACIONES NO LEIDAS ---
+
+@router.get("/turnos/no-notificados", tags=["notificaciones"])
+def obtener_notificaciones(db: Session = Depends(get_tenant_db_dep)):
+    """Obtiene turnos que aún no fueron notificados al barbero"""
+    try:
+        turnos = (
+            db.query(Turno)
+            .options(joinedload(Turno.cliente), joinedload(Turno.servicio))
+            .filter(Turno.notificado == False)
+            .order_by(Turno.creado_en.desc())
+            .all()
+        )
+
+        resultado = []
+        for t in turnos:
+            cliente_nombre = t.cliente.nombre if t.cliente else "Desconocido"
+            servicio_nombre = t.servicio.nombre if t.servicio else "Desconocido"
+            resultado.append({
+                "id": t.id,
+                "cliente": cliente_nombre,
+                "servicio": servicio_nombre,
+                "fecha": t.fecha.isoformat(),
+                "hora_inicio": t.hora_inicio.strftime("%H:%M"),
+                "creado_en": t.creado_en.isoformat()
+            })
+
+        return resultado
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener notificaciones: {str(e)}")
+
+# --- MARCAR COMO LEIDAS LAS NOTIFICACIONES ---
+
+@router.put("/notificaciones/marcar-leidas", tags=["notificaciones"])
+def marcar_notificaciones_leidas(db: Session = Depends(get_tenant_db_dep)):
+    """Marca todas las notificaciones como leídas (notificado=True)"""
+    try:
+        db.query(Turno).filter(
+            Turno.notificado == False
+        ).update({"notificado": True}, synchronize_session=False)
+        
+        db.commit()
+        return {"message": "Notificaciones marcadas como leídas"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al marcar notificaciones: {str(e)}")
+

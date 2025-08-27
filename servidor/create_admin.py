@@ -1,5 +1,5 @@
-"""Crea un usuario admin en la base GLOBAL de usuarios."""
-from app.core.config import GlobalSessionLocal
+"""Crea un usuario admin en la base TENANT (ej: juancho-barber)."""
+from app.core.config import TenantSessionLocal
 from app.models.models import Usuario
 from passlib.context import CryptContext
 from sqlalchemy.exc import IntegrityError
@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def crear_admin():
-    db = GlobalSessionLocal()
+    db = TenantSessionLocal()
     try:
         # Verificar si ya existe un admin
         admin_existente = db.query(Usuario).filter(Usuario.usuario == "admin").first()
@@ -25,7 +25,7 @@ def crear_admin():
         )
         db.add(nuevo_admin)
         db.commit()
-        print("Usuario admin creado correctamente: usuario='admin', password='admin123'")
+        print("Usuario admin creado correctamente en juancho-barber: usuario='admin', password='admin123'")
     except IntegrityError:
         db.rollback()
         print("Error al crear el usuario admin. Probablemente ya existe.")

@@ -1,9 +1,9 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date, Time, Index, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date, Time, Index, Boolean, JSON
+from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
-from app.core.config import GlobalBase, TenantBase
+from app.core.config import TenantBase
 
-class Usuario(GlobalBase):
+class Usuario(TenantBase):
     __tablename__ = "usuarios"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -32,6 +32,8 @@ class Servicio(TenantBase):
     precio = Column(Integer, nullable=False)  # Precio en centavos
     
     turnos = relationship("Turno", back_populates="servicio")
+    barbero_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    barbero = relationship("Usuario")
 
 class Turno(TenantBase):
     __tablename__ = "turnos"
@@ -39,14 +41,17 @@ class Turno(TenantBase):
     id = Column(Integer, primary_key=True, index=True)
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=False, index=True)
     servicio_id = Column(Integer, ForeignKey("servicios.id"), nullable=False)
+    barbero_id = Column(Integer, nullable=True)  # Sin ForeignKey
     fecha = Column(Date, nullable=False, index=True)
     hora_inicio = Column(Time, nullable=False)
     hora_fin = Column(Time, nullable=False)
     estado = Column(String(20), nullable=False, index=True)  # 'pendiente', 'confirmado', 'cancelado', 'completado'
     creado_en = Column(DateTime, server_default=func.now())
+    notificado = Column(Boolean, default=False, nullable=False)
     
     cliente = relationship("Clientes", back_populates="turnos")
     servicio = relationship("Servicio", back_populates="turnos")
+    # barbero = relationship("Usuario")
 
 # Índices compuestos para optimizar consultas
 Index('idx_turnos_cliente_fecha', Turno.cliente_id, Turno.fecha)
