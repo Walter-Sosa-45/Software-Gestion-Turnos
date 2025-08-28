@@ -165,7 +165,7 @@
   .turno-status.cancelado { background: #f8d7da; color: #721c24; }
   .whatsapp-small { background: #25d366; color: white; border: none; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .whatsapp-small:hover { background: #128c7e; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3); transform: scale(1.05); }
-  
+  .cancel-button { background: #f44336; color: white; border: none; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   /* Estilos responsivos para móvil */
   @media (max-width: 768px) {
     .calendar-day {

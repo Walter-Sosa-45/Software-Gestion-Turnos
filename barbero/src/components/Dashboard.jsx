@@ -53,83 +53,109 @@ const Dashboard = () => {
     );
   }
 
-  useEffect(() => {
-        const cargarDatos = async (isInitial = false) => {
-          try {
-            if (isInitial) {
-              setInitialLoading(true);
-            } else {
-              setRefreshing(true); // no muestra modal, solo actualiza en background
-            }
-            setError(null);
+  const isTurnoRestaurable = (turno) => {
+    const [year, month, day] = turno.fecha.split('-').map(Number);
+    const [hour, minute] = turno.hora_inicio.split(':').map(Number);
+    const turnoFecha = new Date(year, month - 1, day, hour, minute); // hora local
+    return turno.estado === 'cancelado' && turnoFecha > new Date();
+  };
 
-            const fechaHoy = format(new Date(), 'yyyy-MM-dd');
-            const turnosDelDiaResponse = await turnosService.getTurnosPorFecha(fechaHoy);
-            setTurnos(turnosDelDiaResponse.turnos || []);
-
-            const notificacionesResponse = await turnosService.getTurnosNoNotificados();
-            setNotifications(
-              (notificacionesResponse || []).map(t => ({
-                id: t.id,
-                mensaje: `Nuevo turno de ${t.cliente || 'Cliente'} el ${t.fecha} a las ${t.hora_inicio}`,
-                leida: false
-              }))
-          );
-        
-      
-        
-
-        const ahora = new Date();
-        const añoActual = ahora.getFullYear();
-        const mesActual = ahora.getMonth(); // 0-11
-        const primerDiaMes = new Date(añoActual, mesActual, 1);
-        const ultimoDiaMes = new Date(añoActual, mesActual + 1, 0);
-
-        const statsResponse = await turnosService.getEstadisticas(
-          format(primerDiaMes, 'yyyy-MM-dd'),
-          format(ultimoDiaMes, 'yyyy-MM-dd')
-        );
-
-        const estadisticasProcesadas = {
-          total: statsResponse.estadisticas?.total_turnos || 0,
-          pendientes: statsResponse.estadisticas?.pendientes || 0,
-          completados: statsResponse.estadisticas?.completados || 0,
-          enCurso: statsResponse.estadisticas?.confirmados || 0
-        };
-        setEstadisticas(estadisticasProcesadas);
-
-      } catch (error) {
-        console.error('❌ Error al cargar datos:', error);
-        if (error.response?.status === 422) {
-          setError('Error en el formato de fechas. Intenta recargar la página.');
-        } else if (error.response?.status === 500) {
-          setError('Error del servidor. Verifica que la base de datos esté inicializada.');
-        } else if (error.code === 'ERR_NETWORK') {
-          setError('No se pudo conectar con el servidor. Verifica que el backend esté ejecutándose.');
-        } else {
-          setError('Error al cargar los datos. Intenta recargar la página.');
-        }
-      } finally {
-          if (isInitial) {
-            setInitialLoading(false);
-          } else {
-            setRefreshing(false);
-          }
+  const toggleTurno = async(turno) => {
+    try {
+      if (turno.estado == 'cancelado') {
+        await turnosService.restaurarTurno(turno.id);
+        alert("Turno restaurado correctamente");
+      } else {
+        if (!window.confirm("¿Estás seguro de querer cancelar este turno?")) return;
+        await turnosService.cancelarTurno(turno.id, "cancelado");
+        alert("Turno cancelado correctamente");
       }
-    };
 
-    cargarDatos(true);
+      // Refrescar la lista de turnos
+      //   await cargarDatos(false);
+      //   setTurnos(turnos || []);
+
+    } catch (error) {
+      console.log("Error al restaurar turno:", error);
+      alert("No se pudo restaurar el turno. Por favor, intenta nuevamente.");
+    }
+  }
+
+  useEffect(() => {  
+    const cargarDatos = async (isInitial = false) => {
+      try {
+        if (isInitial) {
+          setInitialLoading(true);
+        } else {
+          setRefreshing(true); // no muestra modal, solo actualiza en background
+        }
+        setError(null);
+  
+        const fechaHoy = format(new Date(), 'yyyy-MM-dd');
+        const turnosDelDiaResponse = await turnosService.getTurnosPorFecha(fechaHoy);
+        setTurnos(turnosDelDiaResponse.turnos || []);
+  
+        const notificacionesResponse = await turnosService.getTurnosNoNotificados();
+        setNotifications(
+          (notificacionesResponse || []).map(t => ({
+            id: t.id,
+            titulo: "Nuevo turno",
+            cliente: t.cliente || "Cliente",
+            fecha: t.fecha,
+            hora: t.hora_inicio,
+            servicio: t.servicio,
+            leida: false
+          }))
+      );
+    
+  
+    const fechaHoyStr = format(new Date(), 'yyyy-MM-dd');
+    console.log(fechaHoyStr);
+    const statsResponse = await turnosService.getEstadisticas(fechaHoyStr, fechaHoyStr);
+  
+    const estadisticasProcesadas = {
+      total: statsResponse.estadisticas?.total_turnos || 0,
+      pendientes: statsResponse.estadisticas?.pendientes || 0,
+      completados: statsResponse.estadisticas?.completados || 0,
+      enCurso: statsResponse.estadisticas?.confirmados || 0
+    };
+    setEstadisticas(estadisticasProcesadas);
+    
+    
+  } catch (error) {
+    console.error('❌ Error al cargar datos:', error);
+    if (error.response?.status === 422) {
+      setError('Error en el formato de fechas. Intenta recargar la página.');
+    } else if (error.response?.status === 500) {
+      setError('Error del servidor. Verifica que la base de datos esté inicializada.');
+    } else if (error.code === 'ERR_NETWORK') {
+      setError('No se pudo conectar con el servidor. Verifica que el backend esté ejecutándose.');
+    } else {
+      setError('Error al cargar los datos. Intenta recargar la página.');
+    }
+  } finally {
+      if (isInitial) {
+        setInitialLoading(false);
+      } else {
+        setRefreshing(false);
+      }
+  }
+  };      
+
+   cargarDatos(true);
    const interval = setInterval(() => cargarDatos(false), 1 * 60 * 1000); // cada 1 min
     return () => clearInterval(interval);
   }, []);
+  
 
   const handleWhatsApp = (telefono) => {
     const mensaje = encodeURIComponent('Hola! Te confirmo tu turno en la barbería.');
     window.open(`https://wa.me/${telefono.replace(/\s/g, '')}?text=${mensaje}`, '_blank');
   };
 
-  const handleLogout = () => {
-    if (window.confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+  const handleLogout = async () => {
+    const respuesta = await window.confirm('¿Estás seguro de que quieres cerrar sesión?')
+    if (respuesta) {
       logout();
     }
   };
@@ -325,7 +351,16 @@ const Dashboard = () => {
                       <Clock />
                       {formatearHora(turno.hora_inicio)}
                     </div>
+                    <div className="turno-actions">
                     <span className={`turno-estado ${turno.estado}`}>{turno.estado}</span>
+                    <button
+                         className="cancel-button" 
+                         onClick={() => toggleTurno(turno)}
+                         disabled={!isTurnoRestaurable(turno) && turno.estado !== 'pendiente'}
+                         >
+                          {isTurnoRestaurable(turno) ? 'restablecer' : 'cancelar'}                                                  
+                    </button>
+                    </div>
                   </div>
                   <div className="cliente">
                     <User />

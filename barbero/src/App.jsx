@@ -1,6 +1,9 @@
 import React from 'react';
+import { useEffect } from 'react';
+import { useAlert } from './components/AlertContext';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AlertProvider } from './components/AlertContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import './App.css';
@@ -19,6 +22,14 @@ const ProtectedRoute = ({ children }) => {
 // Componente principal de la aplicación
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
+
+  const { alert, confirm, prompt } = useAlert();
+
+  useEffect(() => {
+    window.alert = alert;       // reemplaza alert nativo
+    window.confirm = confirm;   // reemplaza confirm nativo
+    window.prompt = prompt;     // reemplaza prompt nativo
+  }, [alert, confirm, prompt]);
   
   return (
     <Routes>
@@ -44,9 +55,11 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="App">
-          <AppContent />
-        </div>
+        <AlertProvider>
+          <div className="App">
+            <AppContent />
+          </div>
+        </AlertProvider>
       </AuthProvider>
     </Router>
   );

@@ -313,8 +313,23 @@
     font-weight: 600;
     color: var(--primary-color, #667eea);
   }
+
+  .turno-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
   
   .turno-estado {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+    transition: all 0.3s ease;
+  }
+  
+  .cancel-button {
     padding: 6px 12px;
     border-radius: 20px;
     font-size: 12px;

@@ -125,6 +125,18 @@ def delete_turno(db: Session, turno_id: int) -> bool:
         return True
     return False
 
+
+# Manejo de Estados para los turnos
+def update_turno_estado(db: Session, turno_id: int, nuevo_estado: str) -> Turno | None:
+    db_turno = db.query(Turno).filter(Turno.id == turno_id).first()
+    if not db_turno:
+        return None  # No existe el turno
+    
+    db_turno.estado = nuevo_estado
+    db.commit()
+    db.refresh(db_turno)
+    return db_turno
+
 # Funciones adicionales necesarias para el frontend
 def get_servicio_by_nombre(db: Session, nombre: str) -> Optional[Servicio]:
     return db.query(Servicio).filter(Servicio.nombre == nombre).first()

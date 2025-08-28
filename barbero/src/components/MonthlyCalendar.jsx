@@ -95,6 +95,37 @@ const MonthlyCalendar = ({ onClose }) => {
     }
   };
 
+  const isTurnoRestaurable = (turno) => {
+    const turnoFecha = new Date(`${turno.fecha}T${turno.hora_inicio}`);
+    return turno.estado === 'cancelado' && turnoFecha > new Date();
+  };
+
+  const toggleTurno = async(turno) => {
+    try {
+      if (turno.estado == 'cancelado') {
+        await turnosService.restaurarTurno(turno.id);
+        alert("Turno restaurado correctamente");
+      } else {
+        if (!window.confirm("¿Estás seguro de querer cancelar este turno?")) return;
+        await turnosService.cancelarTurno(turno.id, "cancelado");
+        alert("Turno cancelado correctamente");
+      }
+
+
+      // Refrescar la lista de turnos
+      await cargarTurnosDelMes();
+      if (selectedDate) {
+        const fechaStr = format(selectedDate, 'yyyy-MM-dd');
+        const { turnos } = await turnosService.getTurnosPorFecha(fechaStr);
+        setSelectedDateTurnos(turnos || []);
+      }
+
+    } catch (error) {
+      console.log("Error al restaurar turno:", error);
+      alert("No se pudo restaurar el turno. Por favor, intenta nuevamente.");
+    }
+  }
+
   const handleDateClick = async (fecha) => {
     setSelectedDate(fecha);
     try {
@@ -312,6 +343,13 @@ const MonthlyCalendar = ({ onClose }) => {
                         <span className={`turno-status ${turno.estado}`}>
                           {turno.estado}
                         </span>
+                        <button
+                         className="cancel-button" 
+                         onClick={() => toggleTurno(turno)}
+                         disabled={new Date(`${turno.fecha}T${turno.hora_inicio}`) < new Date() && turno.estado !== 'cancelado'}
+                         >
+                          {isTurnoRestaurable(turno) ? 'restablecer' : 'cancelar'}                                                  
+                         </button>
                         <button 
                           className="whatsapp-small"
                           onClick={() => handleWhatsApp(obtenerTelefonoCliente(turno))}

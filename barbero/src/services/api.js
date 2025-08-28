@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { format } from 'date-fns';
 import { config } from './config';
 
 // Configurar axios con prefijo /api/v1
@@ -107,6 +108,26 @@ export const turnosService = {
 
   deleteTurno: async (id) => {
     const response = await api.delete(`/turnos/${id}`);
+    return response.data;
+  },
+
+  cancelarTurno: async (id) => {
+    const response = await api.put(`/turnos/cancelar/${id}`);
+    return response.data;
+  },
+
+  completarTurno: async (id) => {
+    const response = await api.put(`/turnos/completar/${id}`);
+    return response.data;
+  },
+
+  turnoEnCurso: async (id) => {
+    const response = await api.put(`/turnos/en-curso/${id}`);
+    return response.data;
+  },
+
+  restaurarTurno: async (id) => {
+    const response = await api.put(`/turnos/restaurar/${id}`);
     return response.data;
   },
 

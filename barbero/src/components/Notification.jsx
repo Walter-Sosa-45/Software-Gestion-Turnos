@@ -13,7 +13,11 @@ const NotificationPanel = ({ notifications, onClose }) => {
       ) : (
         notifications.map(n => (
           <div key={n.id} className="notification-card">
-            {n.mensaje}
+            <strong>{n.titulo}</strong>
+            <p>De: {n.cliente}</p>
+            <p>Fecha: {n.fecha}</p>
+            <p>Hora: {n.hora}</p>
+            <p>Servicio: {n.servicio}</p>
           </div>
         ))
       )}

@@ -186,7 +186,7 @@ def get_horarios_disponibles(fecha: str, db: Session = Depends(get_tenant_db_dep
 
 # --- Crear turno desde cliente (frontend) ---
 @router.post("/turnos/", tags=["turnos"])
-def crear_turno_desde_cliente(turno_data: dict, db: Session = Depends(get_tenant_db_dep)):
+async def crear_turno_desde_cliente(turno_data: dict, db: Session = Depends(get_tenant_db_dep)):
     try:
         nombre = turno_data.get("nombre")
         apellido = turno_data.get("apellido")
@@ -231,7 +231,6 @@ def crear_turno_desde_cliente(turno_data: dict, db: Session = Depends(get_tenant
 
         # Crear turno
         turno = crud.create_turno(db, cliente.id, servicio.id, fecha_dt, hora_dt, hora_fin_dt)
-        
 # -----------------------------------
 
         return {
@@ -304,6 +303,55 @@ def crear_turno_desde_cliente(turno_data: dict, db: Session = Depends(get_tenant
 #         }
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=f"Error al crear turno: {str(e)}")
+
+
+
+# --- Actualizar estados de los turnos ---
+
+@router.put("/turnos/cancelar/{turno_id}", tags=["turnos"])
+def cancelar_turno(turno_id: int, db: Session = Depends(get_tenant_db_dep)):
+    """Cancela un turno existente"""
+    try:
+        turno = crud.update_turno_estado(db, turno_id, "cancelado")
+        if not turno:
+            raise HTTPException(status_code=404, detail="Turno no encontrado")
+        return turno
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al cancelar turno: {str(e)}")
+
+@router.put("/turnos/completar/{turno_id}", tags=["turnos"])
+def completar_turno(turno_id: int, db: Session = Depends(get_tenant_db_dep)):
+    """Completa un turno existente"""
+    try:
+        turno = crud.update_turno_estado(db, turno_id, "completado")
+        if not turno:
+            raise HTTPException(status_code=404, detail="Turno no encontrado")
+        return turno
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al completar turno: {str(e)}")
+
+
+@router.put("/turnos/en-curso/{turno_id}", tags=["turnos"])
+def turno_en_curso(turno_id: int, db: Session = Depends(get_tenant_db_dep)):
+    """Marca un turno como en curso"""
+    try:
+        turno = crud.update_turno_estado(db, turno_id, "en_curso")
+        if not turno:
+            raise HTTPException(status_code=404, detail="Turno no encontrado")
+        return turno
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al marcar turno como en curso: {str(e)}")
+
+@router.put("/turnos/restaurar/{turno_id}", tags=["turnos"])
+def restaurar_turno(turno_id: int, db: Session = Depends(get_tenant_db_dep)):
+    """Restaura un turno cancelado"""
+    try:
+        turno = crud.update_turno_estado(db, turno_id, "pendiente")
+        if not turno:
+            raise HTTPException(status_code=404, detail="Turno no encontrado")
+        return turno
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al restaurar turno: {str(e)}")
 
 # --- Endpoints adicionales para el frontend del barbero ---
 
@@ -465,4 +513,3 @@ def marcar_notificaciones_leidas(db: Session = Depends(get_tenant_db_dep)):
         return {"message": "Notificaciones marcadas como leídas"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al marcar notificaciones: {str(e)}")
-

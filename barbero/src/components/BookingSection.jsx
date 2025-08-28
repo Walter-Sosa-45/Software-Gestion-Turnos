@@ -278,7 +278,7 @@ function BookingSection({ isVisible, onClose }) {
       console.log('Enviando datos del turno:', turnoData)
       const resultado = await turnosService.createTurno(turnoData)
       console.log('Respuesta del servidor:', resultado)
-      alert(`Turno agendado exitosamente! ID: ${resultado.turno_id}`)
+      alert(`Turno agendado exitosamente!`)
       setFormData({ name: '', lastName: '', phone: '', date: '', time: '', service: '' })
       setSelectedDate(null)
       setSelectedTime('')
