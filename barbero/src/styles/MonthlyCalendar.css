@@ -83,10 +83,10 @@
   
   .legend-item { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--secondary-color); }
   .legend-color { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border-color); }
-  .legend-color.sin-turnos { background: #f8f9fa; }
-  .legend-color.con-turnos-disponible { background: #e3f2fd; border-color: #2196f3; }
-  .legend-color.completo { background: #ffebee; }
-  .legend-color.todo-dia-bloqueado { background: #d32f2f; border-color: #b71c1c; }
+  .legend-color.sin-turnos-calendar { background: #f8f9fa; }
+  .legend-color.con-turnos-disponible-calendar { background: #e3f2fd; border-color: #2196f3; }
+  .legend-color.completo-calendar { background: #85e705; }
+  .legend-color.todo-dia-bloqueado-calendar { background: #d32f2f; border-color: #b71c1c; }
   
   .calendar-grid { padding: 20px; animation: fadeInUp 0.4s ease-out 0.3s both; }
   .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 16px; }
@@ -106,40 +106,87 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-  
-  .calendar-day:hover:not(:disabled) { background: var(--card-background); transform: scale(1.05); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-  .calendar-day.other-month { color: var(--border-color); background: #fafafa; cursor: not-allowed; }
-  .calendar-day.today { border-color: var(--accent-color); background: var(--accent-color); color: white; font-weight: 600; animation: pulse 2s infinite; }
-  .calendar-day.sin-turnos { background: #f8f9fa; }
-  .calendar-day.con-turnos-disponible { background: #e3f2fd; border-color: #2196f3; }
-  .calendar-day.completo { 
-    background: #ffebee; 
-    border-color: #f44336; 
     position: relative;
   }
   
+  .calendar-day:hover:not(:disabled) { 
+    background: var(--primary-color); 
+    transform: scale(1.05); 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
+  }
+  
+  .calendar-day.other-month { color: var(--border-color); background: #fafafa; cursor: not-allowed; }
+  /* Día actual independientemente de otros estados */
+ .calendar-day.today {
+  border-color: var(--accent-color);
+  background: var(--accent-color) !important;
+  color: white !important;
+  font-weight: 600;
+  animation: pulse 2s infinite;
+ }
+
+
+  .calendar-day.today:hover:not(:disabled) {
+    background: var(--accent-color);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .calendar-day.sin-turnos {
+    background: #f8f9fa; /* un blanco grisáceo, más visible */
+    border: 1px solid #ddd;
+    color: #212121;
+  }
+  
+  .calendar-day.con-turnos-disponible {
+    background: #e3f2fd; /* azul claro */
+    border: 1px solid #2196f3; /* borde azul */
+    color: #0d47a1; /* texto más visible */
+    position: relative;
+  }
+  
+  .calendar-day.con-turnos-disponible:hover:not(:disabled) {
+    background: #90caf9; /* azul más intenso al hover */
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .calendar-day.completo {
+    background: #85e705;   /* verde fuerte */
+    border: 1px solid #4caf50;
+    color: #1b5e20;        /* texto oscuro para contraste */
+    font-weight: 600;
+  }
+  
+    
+  .calendar-day.todo-dia-bloqueado {
+    background: #d32f2f;  /* rojo fuerte */
+    color: white;
+    border-color: #b71c1c;
+    font-weight: 600;
+    position: relative;   /* necesario para posicionar el icono */
+  }
+  
+  
   /* Indicador de bloqueo para días bloqueados */
-  .calendar-day.completo::after {
+  .calendar-day.bloqueo-parcial::after {
     content: "🔒";
     position: absolute;
     top: 2px;
     right: 2px;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1;
   }
   
   /* Estilos específicos para días bloqueados de todo el día */
-  .calendar-day.completo.todo-dia-bloqueado {
-    background: #d32f2f;
-    color: white;
-    border-color: #b71c1c;
-    font-weight: 600;
-  }
-  
-  .calendar-day.completo.todo-dia-bloqueado::after {
+  .calendar-day.todo-dia-bloqueado::after {
     content: "🚫";
+    position: absolute;
+    top: 2px;
+    right: 2px;
     font-size: 12px;
+    line-height: 1;
   }
   
   .loading-calendar { grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--secondary-color); }
@@ -153,11 +200,28 @@
   .close-details:hover { background: var(--card-background); transform: scale(1.1); }
   .no-turnos-day { padding: 40px 20px; text-align: center; color: var(--secondary-color); animation: fadeIn 0.6s ease-out; }
   .turnos-list-day { padding: 20px; }
-  .turno-item-day { background: var(--card-background); border-radius: var(--border-radius-small); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border-color); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); animation: fadeInUp 0.4s ease-out; }
+  
+  .turno-item-day { 
+    background: var(--card-background); 
+    border-radius: var(--border-radius-small); 
+    padding: 16px; margin-bottom: 12px; border: 1px solid var(--border-color); 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    animation: fadeInUp 0.4s ease-out; 
+  }
+  
   .turno-time { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--primary-color); margin-bottom: 8px; }
   .turno-client { display: flex; align-items: center; gap: 8px; color: var(--secondary-color); margin-bottom: 8px; }
   .turno-service { font-size: 14px; color: var(--secondary-color); margin-bottom: 12px; }
-  .turno-actions { display: flex; justify-content: space-between; align-items: center; }
+  
+  .turno-actions-calendar { 
+    display: flex !important; 
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: nowwrap;
+  }
+  
   .turno-status { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; text-transform: capitalize; }
   .turno-status.pendiente { background: #fff3cd; color: #856404; }
   .turno-status.confirmado { background: #d1ecf1; color: #0c5460; }
@@ -184,7 +248,7 @@
     }
     
     /* Hacer más visible el estado bloqueado en móvil */
-    .calendar-day.completo {
+    .calendar-day.completo.todo-dia-bloqueado {
       background: #f44336;
       color: white;
       border-color: #d32f2f;
@@ -192,7 +256,7 @@
       box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
     }
     
-    .calendar-day.completo:hover {
+    .calendar-day.todo-dia-bloqueado:hover {
       background: #d32f2f;
       transform: scale(1.02);
     }
@@ -230,7 +294,7 @@
     .calendar-day { font-size: 16px; }
     .day-details-content { max-width: 600px; }
     .turno-item-day { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 16px; align-items: center; }
-    .turno-actions { justify-content: flex-end; gap: 12px; }
+    .turno-actions { display: flex; flex-direction: row; }
   }
   
   

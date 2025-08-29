@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Clock, User, X, Unlock } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { turnosService, bloqueosService } from '../services/api';
 import '../styles/MonthlyCalendar.css';
@@ -18,7 +18,9 @@ const MonthlyCalendar = ({ onClose }) => {
   const DISPONIBILIDAD = {
     SIN_TURNOS: 'sin-turnos',
     CON_TURNOS_DISPONIBLE: 'con-turnos-disponible',
-    COMPLETO: 'completo'
+    COMPLETO: 'completo',
+    BLOQUEO_PARCIAL: 'bloqueo-parcial',
+    TODO_DIA_BLOQUEADO: 'todo-dia-bloqueado'
   };
 
   useEffect(() => {
@@ -41,9 +43,10 @@ const MonthlyCalendar = ({ onClose }) => {
     } catch (error) {
       console.error('Error al cargar turnos del mes:', error);
     } finally {
-      setLoading(false);
+
+      setTimeout(() =>setLoading(false), 1000);
     }
-  };
+ };
 
   const cargarBloqueosDelMes = async () => {
     try {
@@ -57,26 +60,22 @@ const MonthlyCalendar = ({ onClose }) => {
   };
 
   const obtenerDisponibilidadFecha = (fecha) => {
-    // Si hay bloqueo de todo el día, marcar como completo
-    const bloqueosDia = bloqueos.filter(b => new Date(b.fecha).toDateString() === fecha.toDateString());
+    const bloqueosDia = bloqueos.filter(b => isSameDay(parseISO(b.fecha), fecha));
+    
+    // Bloqueo total
     const bloqueoTodoDia = bloqueosDia.find(b => b.todo_dia);
     if (bloqueoTodoDia) {
-      return { tipo: DISPONIBILIDAD.COMPLETO, todoDiaBloqueado: true };
+      return { tipo: DISPONIBILIDAD.TODO_DIA_BLOQUEADO, todoDiaBloqueado: true, tieneBloqueoParcial: false };
     }
-    
-    const turnosFecha = turnos.filter(turno => 
-      isSameDay(new Date(turno.fecha), fecha)
-    );
-
-    if (turnosFecha.length === 0) {
-      return { tipo: DISPONIBILIDAD.SIN_TURNOS, todoDiaBloqueado: false };
-    }
-
-    // Verificar si hay horarios disponibles (asumiendo horarios de 9:00 a 22:00 cada 30 min)
-    const horariosOcupados = turnosFecha.length;
+  
+    // Bloqueos parciales
+    const tieneBloqueoParcial = bloqueosDia.some(b => !b.todo_dia);
+  
+    // Turnos del día
+    const turnosFecha = turnos.filter(turno => isSameDay(parseISO(turno.fecha), fecha));
     const totalHorarios = 26; // 13 horas * 2 slots por hora
-
-    // Si hay bloqueos parciales, restar slots bloqueados (aprox cada 30m)
+  
+    // Contar slots bloqueados por bloqueos parciales
     let slotsBloqueados = 0;
     for (const b of bloqueosDia) {
       if (!b.todo_dia && b.hora_inicio && b.hora_fin) {
@@ -86,17 +85,25 @@ const MonthlyCalendar = ({ onClose }) => {
         slotsBloqueados += Math.max(0, Math.floor(minutos / 30));
       }
     }
-    const totalHorariosConsiderandoBloqueos = Math.max(0, totalHorarios - slotsBloqueados);
-
-    if (horariosOcupados >= totalHorariosConsiderandoBloqueos) {
-      return { tipo: DISPONIBILIDAD.COMPLETO, todoDiaBloqueado: false };
+  
+    const totalDisponibles = Math.max(0, totalHorarios - slotsBloqueados);
+  
+    // Determinar tipo principal
+    let tipo;
+    if (turnosFecha.length >= totalDisponibles) {
+      tipo = DISPONIBILIDAD.COMPLETO;
+    } else if (turnosFecha.length === 0) {
+      tipo = DISPONIBILIDAD.SIN_TURNOS;
     } else {
-      return { tipo: DISPONIBILIDAD.CON_TURNOS_DISPONIBLE, todoDiaBloqueado: false };
+      tipo = DISPONIBILIDAD.CON_TURNOS_DISPONIBLE;
     }
+  
+    return { tipo, todoDiaBloqueado: false, tieneBloqueoParcial };
   };
+  
 
   const isTurnoRestaurable = (turno) => {
-    const turnoFecha = new Date(`${turno.fecha}T${turno.hora_inicio}`);
+    const turnoFecha = parseISO(`${turno.fecha}T${turno.hora_inicio}`);
     return turno.estado === 'cancelado' && turnoFecha > new Date();
   };
 
@@ -126,20 +133,32 @@ const MonthlyCalendar = ({ onClose }) => {
     }
   }
 
-  const handleDateClick = async (fecha) => {
+  // const handleDateClick = async (fecha) => {
+  //   setSelectedDate(fecha);
+  //   try {
+  //     const fechaStr = format(fecha, 'yyyy-MM-dd');
+  //     const response = await turnosService.getTurnosPorFecha(fechaStr);
+  //     setSelectedDateTurnos(response.turnos || []);
+  //     const bloqueosResp = await bloqueosService.listarBloqueos({ fecha_inicio: fechaStr, fecha_fin: fechaStr });
+  //     setSelectedDateBloqueos(bloqueosResp || []);
+  //   } catch (error) {
+  //     console.error('Error al cargar turnos de la fecha:', error);
+  //     setSelectedDateTurnos([]);
+  //     setSelectedDateBloqueos([]);
+  //   }
+  // };
+
+  const handleDateClick = (fecha) => {
     setSelectedDate(fecha);
-    try {
-      const fechaStr = format(fecha, 'yyyy-MM-dd');
-      const response = await turnosService.getTurnosPorFecha(fechaStr);
-      setSelectedDateTurnos(response.turnos || []);
-      const bloqueosResp = await bloqueosService.listarBloqueos({ fecha_inicio: fechaStr, fecha_fin: fechaStr });
-      setSelectedDateBloqueos(bloqueosResp || []);
-    } catch (error) {
-      console.error('Error al cargar turnos de la fecha:', error);
-      setSelectedDateTurnos([]);
-      setSelectedDateBloqueos([]);
-    }
+  
+    // Filtrar turnos y bloqueos del mes ya cargados
+    const turnosDelDia = turnos.filter(turno => isSameDay(parseISO(turno.fecha), fecha));
+    const bloqueosDelDia = bloqueos.filter(b => isSameDay(parseISO(b.fecha), fecha));
+  
+    setSelectedDateTurnos(turnosDelDia);
+    setSelectedDateBloqueos(bloqueosDelDia);
   };
+  
 
   const cambiarMes = (direccion) => {
     setCurrentDate(prev => 
@@ -227,19 +246,19 @@ const MonthlyCalendar = ({ onClose }) => {
         {/* Leyenda */}
         <div className="calendar-legend">
           <div className="legend-item">
-            <div className="legend-color sin-turnos"></div>
+            <div className="legend-color sin-turnos-calendar"></div>
             <span>Sin turnos</span>
           </div>
           <div className="legend-item">
-            <div className="legend-color con-turnos-disponible"></div>
+            <div className="legend-color con-turnos-disponible-calendar"></div>
             <span>Con turnos (disponible)</span>
           </div>
           <div className="legend-item">
-            <div className="legend-color completo"></div>
+            <div className="legend-color completo-calendar"></div>
             <span>Completo/Bloqueado</span>
           </div>
           <div className="legend-item">
-            <div className="legend-color todo-dia-bloqueado"></div>
+            <div className="legend-color todo-dia-bloqueado-calendar"></div>
             <span>Todo el día bloqueado</span>
           </div>
         </div>
@@ -270,7 +289,8 @@ const MonthlyCalendar = ({ onClose }) => {
                       !esMesActual ? 'other-month' : ''
                     } ${esHoy ? 'today' : ''} ${
                       disponibilidad.todoDiaBloqueado ? 'todo-dia-bloqueado' : ''
-                    }`}
+                    } ${disponibilidad.tieneBloqueoParcial && !disponibilidad.todoDiaBloqueado ? 'bloqueo-parcial' : ''}`}
+                                       
                     onClick={() => handleDateClick(fecha)}
                     disabled={!esMesActual}
                   >
@@ -339,14 +359,14 @@ const MonthlyCalendar = ({ onClose }) => {
                       <div className="turno-service">
                         {turno.servicio?.nombre}
                       </div>
-                      <div className="turno-actions">
+                      <div className="turno-actions-calendar">
                         <span className={`turno-status ${turno.estado}`}>
                           {turno.estado}
                         </span>
                         <button
                          className="cancel-button" 
                          onClick={() => toggleTurno(turno)}
-                         disabled={new Date(`${turno.fecha}T${turno.hora_inicio}`) < new Date() && turno.estado !== 'cancelado'}
+                         disabled={parseISO(`${turno.fecha}T${turno.hora_inicio}`) < new Date() && turno.estado !== 'cancelado'}
                          >
                           {isTurnoRestaurable(turno) ? 'restablecer' : 'cancelar'}                                                  
                          </button>
